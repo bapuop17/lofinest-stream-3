@@ -1,25 +1,30 @@
 name: LofiNest Live
 on:
-  workflow_dispatch: # Button se start karne ke liye
+  workflow_dispatch:      # Button se manually start karne ke liye
   schedule:
-    - cron: '0 */6 * * *' # Har 6 ghante mein auto-restart
+    - cron: '0 */6 * * *' # Har 6 ghante mein Automatic Restart
 
 jobs:
   stream:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Start YouTube Stream
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY }}
+          # Aapka banaya hua Permanent Link yahan laga diya hai:
+          AUDIO_URL: "https://github.com/bapuop17/lofinest-stream-2/releases/download/1.0/Sessions.Vi.A.Creator-Safe.Collection.Riot.Games.Music.mp3"
         run: |
-          # Ye command bina ruke chalegi
-          ffmpeg -re -stream_loop -1 -i video.mp4 -stream_loop -1 -i music.mp3 \
+          ffmpeg -re -stream_loop -1 -i video.mp4 \
+          -thread_queue_size 512 -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 \
+          -stream_loop -1 -i "$AUDIO_URL" \
           -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
           -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -ar 44100 \
-          -map 0:v:0 -map 1:a:0 -shortest \
-          -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+          -map 0:v:0 -map 1:a:0 \
+          -f flv -flvflags no_duration_filesize "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+
+
